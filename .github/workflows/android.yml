@@ -7,14 +7,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. Правильная установка Java
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      # 2. Системные зависимости
       - name: Install System Dependencies
         run: |
           sudo apt update
@@ -23,21 +21,20 @@ jobs:
           pip install --upgrade pip
           pip install "cython<3.0.0" buildozer
 
-      # 3. Принятие лицензий через официальный способ
       - name: Accept Android Licenses
         run: |
-          yes | sdkmanager --sdk_root=$ANDROID_HOME --licenses || true
+          # Используем прямой путь к sdkmanager в окружении GitHub
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses || true
 
-      # 4. Сама сборка
       - name: Build with Buildozer
         run: |
-          # Мы НЕ создаем папки вручную, даем Buildozer сделать всё самому
+          # Запуск сборки
           buildozer -v android debug
         env:
           BUILDOZER_ALLOW_KIVY_ROOT: 1
           BUILDOZER_WARN_ON_ROOT: 0
 
-      # 5. Сохранение результата
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
