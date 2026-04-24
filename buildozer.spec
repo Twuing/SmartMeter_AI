@@ -7,7 +7,7 @@ source.include_exts = py,png,jpg,jpeg,kv,json,db,csv
 version = 1.0.0
 
 # Добавлена связка для стабильной сборки KivyMD
-requirements = python3, hostpython3, kivy==2.3.0, kivymd==1.2.0, pillow, plyer, sdl2_ttf, sdl2_image, sdl2_mixer
+requirements = python3, kivy==2.3.0, kivymd==1.2.0, pillow, matplotlib, numpy, pandas, pyparsing, cycler, python-dateutil, kiwisolver
 
 orientation = portrait
 fullscreen = 0
