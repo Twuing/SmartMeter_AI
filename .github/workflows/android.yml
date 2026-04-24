@@ -1,0 +1,25 @@
+name: Final Build
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential libffi-dev libssl-dev git zip unzip \
+            openjdk-17-jdk python3-dev autoconf automake libtool pkg-config \
+            libltdl-dev cmake
+          pip install --upgrade pip
+          pip install "cython<3.0.0" buildozer
+
+      - name: Build APK
+        run: |
+          buildozer android clean
+          yes | buildozer -v android debug
+        env:
+          ACCEPT_SDK_LICENSE: "y"
+          BUILDOZER_ALLOW_KIVY_ROOT: 1
