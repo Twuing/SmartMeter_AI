@@ -16,14 +16,18 @@ jobs:
           pip install --upgrade pip
           pip install "cython<3.0.0" buildozer
 
+      - name: Pre-accept Android SDK Licenses
+        run: |
+          # Этот блок создает файлы лицензий вручную, чтобы Buildozer не спрашивал их
+          mkdir -p $HOME/.buildozer/android/platform/android-sdk/licenses
+          echo -e "24333f8a63b6d399d99bb93262a62ee9388a3847\n8933bad161af4178b1185d1a37fbf41ea5269c55\nd5626343450d0b2e9293048e2754324626563ec1" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          echo -e "84831b9409646a918e30573bab4c9c91346d8abd\n5046675546729295147bc3530370853ad18b7339" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+
       - name: Build with Buildozer
         run: |
-          # Принудительно принимаем лицензии через sdkmanager перед сборкой
-          mkdir -p ~/.android && touch ~/.android/repositories.cfg
-          # Запускаем сборку без 'yes |', Buildozer сам подхватит переменные окружения
+          # Теперь запускаем чистую сборку
           buildozer -v android debug
         env:
-          ACCEPT_SDK_LICENSE: "y"
           BUILDOZER_ALLOW_KIVY_ROOT: 1
           BUILDOZER_WARN_ON_ROOT: 0
 
