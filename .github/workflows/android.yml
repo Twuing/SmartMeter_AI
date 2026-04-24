@@ -21,22 +21,11 @@ jobs:
           pip install --upgrade pip
           pip install "cython<3.0.0" buildozer
 
-      - name: Accept Android Licenses
-        run: |
-          # Используем прямой путь к sdkmanager в окружении GitHub
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses || true
-
       - name: Build with Buildozer
         run: |
-          # Запуск сборки
-          buildozer -v android debug
+          # Команда 'yes |' снова тут, но теперь она сработает, 
+          # так как мы ограничили аппетиты Buildozer версией 33
+          yes | buildozer -v android debug
         env:
           BUILDOZER_ALLOW_KIVY_ROOT: 1
           BUILDOZER_WARN_ON_ROOT: 0
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: smart-meter-apk
-          path: bin/*.apk
