@@ -1,11 +1,4 @@
 # VERSION 2.0: почти все работает но криво
-from kivy.config import Config
-Config.set('graphics', 'width', '360')
-Config.set('graphics', 'height', '640')
-Config.set('graphics', 'resizable', False)
-from kivy.core.window import Window
-Window.size = (360, 640)
-
 import os
 import re
 import sqlite3
@@ -23,8 +16,13 @@ try:
     import numpy as np
 except ImportError:
     np = None
-from google.cloud import vision
-from google.oauth2 import service_account
+try:
+    from google.cloud import vision
+    from google.oauth2 import service_account
+except ImportError:
+    vision = None
+    service_account = None
+from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.metrics import dp
@@ -611,6 +609,9 @@ class SmartMeterApp(MDApp):
             self.db_conn = None
 
     def create_vision_client(self):
+        if vision is None or service_account is None:
+            print("Google Vision SDK недоступен: импорт не выполнен")
+            return None
         # Primary source: settings.json -> google_api.key_path
         key_path = ""
         legacy_store = JsonStore(self.app_storage_path("settings.json"))
@@ -843,6 +844,9 @@ class SmartMeterApp(MDApp):
     def recognize_reading(self):
         if cv2 is None or np is None:
             print("Распознавание временно недоступно (нет OpenCV)")
+            return
+        if vision is None:
+            print("Распознавание временно недоступно (нет Google Vision SDK)")
             return
         try:
             if self.vision_client is None:
