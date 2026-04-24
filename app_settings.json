@@ -1,0 +1,1 @@
+{"settings": {"price_per_kwh": 30.0, "google_key_path": "", "monthly_limit_kwh": 200.0, "reminder_day": 22, "reminders_enabled": true}, "db_reset_done": {"value": true}, "reminder_state": {"last_notified_month": "2026-04"}}
