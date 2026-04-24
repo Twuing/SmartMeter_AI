@@ -7,30 +7,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 1. Правильная установка Java
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # 2. Системные зависимости
       - name: Install System Dependencies
         run: |
           sudo apt update
           sudo apt install -y build-essential libffi-dev libssl-dev git zip unzip \
-            openjdk-17-jdk python3-dev autoconf automake libtool pkg-config \
-            libltdl-dev cmake
+            python3-dev autoconf automake libtool pkg-config libltdl-dev cmake
           pip install --upgrade pip
           pip install "cython<3.0.0" buildozer
 
-      - name: Pre-accept Android SDK Licenses
+      # 3. Принятие лицензий через официальный способ
+      - name: Accept Android Licenses
         run: |
-          # Этот блок создает файлы лицензий вручную, чтобы Buildozer не спрашивал их
-          mkdir -p $HOME/.buildozer/android/platform/android-sdk/licenses
-          echo -e "24333f8a63b6d399d99bb93262a62ee9388a3847\n8933bad161af4178b1185d1a37fbf41ea5269c55\nd5626343450d0b2e9293048e2754324626563ec1" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          echo -e "84831b9409646a918e30573bab4c9c91346d8abd\n5046675546729295147bc3530370853ad18b7339" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+          yes | sdkmanager --sdk_root=$ANDROID_HOME --licenses || true
 
+      # 4. Сама сборка
       - name: Build with Buildozer
         run: |
-          # Теперь запускаем чистую сборку
+          # Мы НЕ создаем папки вручную, даем Buildozer сделать всё самому
           buildozer -v android debug
         env:
           BUILDOZER_ALLOW_KIVY_ROOT: 1
           BUILDOZER_WARN_ON_ROOT: 0
 
+      # 5. Сохранение результата
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
