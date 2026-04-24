@@ -18,8 +18,10 @@ jobs:
 
       - name: Build with Buildozer
         run: |
-          # Мы убрали 'clean', чтобы не вызывать ошибку на новом репозитории
-          yes | buildozer -v android debug
+          # Принудительно принимаем лицензии через sdkmanager перед сборкой
+          mkdir -p ~/.android && touch ~/.android/repositories.cfg
+          # Запускаем сборку без 'yes |', Buildozer сам подхватит переменные окружения
+          buildozer -v android debug
         env:
           ACCEPT_SDK_LICENSE: "y"
           BUILDOZER_ALLOW_KIVY_ROOT: 1
