@@ -10,13 +10,11 @@ import os
 import re
 import sqlite3
 import csv
-import io
 import tempfile
 import webbrowser
 from datetime import datetime
 from urllib.parse import quote
 
-import matplotlib.pyplot as plt
 try:
     import cv2
 except ImportError:
@@ -28,13 +26,11 @@ except ImportError:
 from google.cloud import vision
 from google.oauth2 import service_account
 from kivy.clock import Clock
-from kivy.core.image import Image as CoreImage
 from kivy.lang import Builder
 from kivy.metrics import dp
 from kivy.properties import BooleanProperty, NumericProperty, StringProperty
 from kivy.storage.jsonstore import JsonStore
 from kivy.utils import platform
-from kivy.uix.image import Image as KivyImage
 from kivy.uix.screenmanager import Screen
 from kivy.uix.stencilview import StencilView
 from kivy.uix.widget import Widget
@@ -1088,14 +1084,14 @@ class SmartMeterApp(MDApp):
         for index in range(1, len(values)):
             consumptions.append(max(0.0, values[index] - values[index - 1]))
 
-        fig, ax = plt.subplots(figsize=(6, 3), dpi=100)
-        ax.plot(dates, consumptions, color="#00FF66", marker="o", linewidth=2)
-        ax.set_xlabel("Дата")
-        ax.set_ylabel("Расход (кВт·ч)")
-        ax.grid(True)
-        fig.autofmt_xdate(rotation=30)
-        fig.tight_layout()
-        chart_box.add_widget(self.get_graph_widget(fig))
+        print("График временно недоступен")
+        chart_box.add_widget(
+            MDLabel(
+                text="График временно недоступен",
+                halign="center",
+                theme_text_color="Hint",
+            )
+        )
 
         current_dt = datetime.now()
         current_month = current_dt.strftime("%Y-%m")
@@ -1134,16 +1130,8 @@ class SmartMeterApp(MDApp):
             self.root.ids.status_text.text_color = (0, 0.6, 0, 1)
 
     def get_graph_widget(self, figure):
-        buffer = io.BytesIO()
-        figure.savefig(buffer, format="png", bbox_inches="tight")
-        buffer.seek(0)
-        core_image = CoreImage(buffer, ext="png")
-        plt.close(figure)
-        return KivyImage(
-            texture=core_image.texture,
-            allow_stretch=True,
-            keep_ratio=True,
-        )
+        print("График временно недоступен")
+        return Widget()
 
     def calculate_monthly_total(self):
         if not self.root or self.db_conn is None:
