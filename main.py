@@ -3,10 +3,12 @@ import os
 import re
 import sqlite3
 import csv
+import io
 import tempfile
 import webbrowser
 from datetime import datetime
 from urllib.parse import quote
+from PIL import Image as PILImage
 
 try:
     import cv2
@@ -909,9 +911,6 @@ class SmartMeterApp(MDApp):
     def recognize_reading(self):
         print("DEBUG: Нажата кнопка 'Распознать'")
         self.request_android_media_permissions()
-        if cv2 is None or np is None:
-            print("Распознавание временно недоступно (нет OpenCV)")
-            return
         if vision is None:
             print("Распознавание временно недоступно (нет Google Vision SDK)")
             return
@@ -924,15 +923,6 @@ class SmartMeterApp(MDApp):
                     return
             if not self.current_image_path:
                 self.status_text = "Сначала загрузите фото."
-                self.root.ids.total_label.text = self.status_text
-                return
-
-            image = cv2.imdecode(
-                np.fromfile(self.current_image_path, dtype=np.uint8),
-                cv2.IMREAD_COLOR,
-            )
-            if image is None:
-                self.status_text = "Ошибка чтения изображения."
                 self.root.ids.total_label.text = self.status_text
                 return
 
@@ -952,11 +942,26 @@ class SmartMeterApp(MDApp):
             local_cx = local_x0 + local_w / 2
             local_cy = local_y0 + local_h / 2
 
-            img_h, img_w = image.shape[:2]
+            use_opencv = cv2 is not None and np is not None
+            if not use_opencv:
+                print("DEBUG: OpenCV недоступен, используем Pillow fallback")
+                pil_image = PILImage.open(self.current_image_path).convert("RGB")
+                img_w, img_h = pil_image.size
+            else:
+                image = cv2.imdecode(
+                    np.fromfile(self.current_image_path, dtype=np.uint8),
+                    cv2.IMREAD_COLOR,
+                )
+                if image is None:
+                    self.status_text = "Ошибка чтения изображения."
+                    self.root.ids.total_label.text = self.status_text
+                    return
+                img_h, img_w = image.shape[:2]
+
             u_center = max(0.0, min(1.0, local_cx / image_widget.width))
             v_center = max(0.0, min(1.0, local_cy / image_widget.height))
             crop_cx = int(u_center * img_w)
-            crop_cy = int((1.0 - v_center) * img_h)  # invert Y: Kivy -> OpenCV
+            crop_cy = int((1.0 - v_center) * img_h)  # invert Y: Kivy -> image space
 
             crop_w = int((local_w / image_widget.width) * img_w * 1.1)
             crop_h = int((local_h / image_widget.height) * img_h * 1.1)
@@ -975,19 +980,27 @@ class SmartMeterApp(MDApp):
                 return
 
             # Keep only precise crop from selection frame for Vision OCR.
-            ocr_crop = image[y0:y1, x0:x1]
             ocr_ready_path = self.app_storage_path(self.OCR_READY_FILE)
-            cv2.imwrite(ocr_ready_path, ocr_crop)
             debug_crop_path = self.app_storage_path("debug_crop.png")
-            cv2.imwrite(debug_crop_path, ocr_crop)
+            if use_opencv:
+                ocr_crop = image[y0:y1, x0:x1]
+                cv2.imwrite(ocr_ready_path, ocr_crop)
+                cv2.imwrite(debug_crop_path, ocr_crop)
+                ok, encoded = cv2.imencode(".png", ocr_crop)
+                if not ok:
+                    self.status_text = "Не удалось подготовить изображение для Vision OCR."
+                    self.root.ids.total_label.text = self.status_text
+                    return
+                vision_bytes = encoded.tobytes()
+            else:
+                pil_crop = pil_image.crop((x0, y0, x1, y1))
+                pil_crop.save(ocr_ready_path, format="PNG")
+                pil_crop.save(debug_crop_path, format="PNG")
+                buffer = io.BytesIO()
+                pil_crop.save(buffer, format="PNG")
+                vision_bytes = buffer.getvalue()
 
-            ok, encoded = cv2.imencode(".png", ocr_crop)
-            if not ok:
-                self.status_text = "Не удалось подготовить изображение для Vision OCR."
-                self.root.ids.total_label.text = self.status_text
-                return
-
-            vision_image = vision.Image(content=encoded.tobytes())
+            vision_image = vision.Image(content=vision_bytes)
             try:
                 response = self.vision_client.text_detection(image=vision_image)
             except Exception as e:
@@ -1039,7 +1052,7 @@ class SmartMeterApp(MDApp):
             print(f"Debug crop saved: {debug_crop_path}")
             print(self.status_text)
         except Exception as error:
-            print(f"Распознавание временно недоступно (ошибка OpenCV): {error}")
+            print(f"Распознавание временно недоступно (ошибка OCR): {error}")
             return
 
     def add_to_history(self):
