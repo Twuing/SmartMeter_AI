@@ -21,18 +21,17 @@ source.include_patterns = assets/*,images/*.png
 version = 1.0.0
 
 # (list) Application requirements
-# Добавлена jnius для работы со StrictMode и расширенные либы для Google Cloud
-requirements = python3, hostpython3, kivy==2.3.0, kivymd==1.2.0, pillow, plyer, jnius, sdl2_ttf, sdl2_image, sdl2_mixer, google-cloud-vision, google-auth, requests, certifi, charset-normalizer, idna, urllib3
+# ВНИМАНИЕ: Добавлены opencv и jnius. OpenCV нужен для обработки, jnius для камеры.
+requirements = python3, hostpython3, kivy==2.3.0, kivymd==1.2.0, pillow, plyer, jnius, opencv, google-cloud-vision, google-auth, requests, certifi, charset-normalizer, idna, urllib3
 
 # (str) Supported orientation
 orientation = portrait
 
 # (list) Permissions
-# Добавлена критическая группа разрешений для Android 13+ (READ_MEDIA_IMAGES)
+# Полный набор прав: камера, интернет и доступ к фото для Android 13+ (MIUI)
 android.permissions = CAMERA, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, INTERNET, READ_MEDIA_IMAGES, READ_MEDIA_VIDEO
 
 # (int) Target Android API
-# API 33 соответствует Android 13, что правильно для современных устройств
 android.api = 33
 
 # (int) Minimum API
@@ -53,8 +52,8 @@ android.logcat_filters = *:S python:D
 # (str) Android architecture to build for
 android.archs = arm64-v8a
 
-# (list) The Android archs to build for
-# Фиксируем arm64-v8a для стабильности на твоем Xiaomi
+# (bool) Copy library to python-install directory (needed for some binary libs)
+android.copy_libs = 1
 
 [buildozer]
 # (int) Log level (0 = error only, 1 = info, 2 = debug)
