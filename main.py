@@ -55,6 +55,16 @@ except Exception:
     request_permissions = None
     Permission = None
 
+if platform == "android":
+    try:
+        from jnius import autoclass
+
+        StrictMode = autoclass("android.os.StrictMode")
+        StrictMode.disableDeathOnFileUriExposure()
+        print("DEBUG: StrictMode.disableDeathOnFileUriExposure включен")
+    except Exception as error:
+        print(f"DEBUG: Не удалось применить StrictMode workaround: {error}")
+
 
 KV = """
 MDScreen:
@@ -564,16 +574,25 @@ class SmartMeterApp(MDApp):
                         return storage_root
                 except Exception as error:
                     print(f"DEBUG: Ошибка получения primary_external_storage_path: {error}")
-            return "/"
+            env_storage = os.environ.get("EXTERNAL_STORAGE", "/sdcard")
+            if env_storage:
+                return env_storage
+            return "/sdcard"
         return os.path.expanduser("~")
 
     def request_android_media_permissions(self):
         if platform == "android" and request_permissions is not None and Permission is not None:
             try:
-                request_permissions(
-                    [Permission.CAMERA, Permission.WRITE_EXTERNAL_STORAGE]
-                )
-                print("DEBUG: Запрошены Android permissions CAMERA/WRITE_EXTERNAL_STORAGE")
+                permissions_to_request = [Permission.CAMERA, Permission.WRITE_EXTERNAL_STORAGE]
+                try:
+                    read_media_images = getattr(Permission, "READ_MEDIA_IMAGES")
+                    permissions_to_request.append(read_media_images)
+                except Exception:
+                    read_external = getattr(Permission, "READ_EXTERNAL_STORAGE", None)
+                    if read_external is not None:
+                        permissions_to_request.append(read_external)
+                request_permissions(permissions_to_request)
+                print(f"DEBUG: Запрошены Android permissions: {permissions_to_request}")
             except Exception as error:
                 print(f"DEBUG: Ошибка запроса разрешений: {error}")
 
@@ -733,6 +752,10 @@ class SmartMeterApp(MDApp):
         if path.lower().endswith(".json"):
             self.root.ids.google_key_path_input.text = path
             self.google_key_path = path
+        try:
+            self.key_file_manager.close()
+        except Exception:
+            pass
         self.exit_key_file_manager()
 
     def exit_key_file_manager(self, *args):
@@ -782,6 +805,10 @@ class SmartMeterApp(MDApp):
 
     def select_image_path(self, path):
         print(f"DEBUG: select_image_path -> {path}")
+        try:
+            self.file_manager.close()
+        except Exception:
+            pass
         self.exit_file_manager()
         self.current_image_path = path
         self.root.ids.selected_image.source = path
