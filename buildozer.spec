@@ -21,17 +21,18 @@ source.include_patterns = assets/*,images/*.png
 version = 1.0.0
 
 # (list) Application requirements
-# Добавлены зависимости для Google Cloud Vision и сетевых запросов
-requirements = python3, hostpython3, kivy==2.3.0, kivymd==1.2.0, pillow, plyer, sdl2_ttf, sdl2_image, sdl2_mixer, google-cloud-vision, google-auth, requests, certifi, charset-normalizer, idna, urllib3
+# Добавлена jnius для работы со StrictMode и расширенные либы для Google Cloud
+requirements = python3, hostpython3, kivy==2.3.0, kivymd==1.2.0, pillow, plyer, jnius, sdl2_ttf, sdl2_image, sdl2_mixer, google-cloud-vision, google-auth, requests, certifi, charset-normalizer, idna, urllib3
 
 # (str) Supported orientation
 orientation = portrait
 
 # (list) Permissions
-# Камера и интернет обязательны для твоего функционала
-android.permissions = CAMERA, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, INTERNET
+# Добавлена критическая группа разрешений для Android 13+ (READ_MEDIA_IMAGES)
+android.permissions = CAMERA, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, INTERNET, READ_MEDIA_IMAGES, READ_MEDIA_VIDEO
 
 # (int) Target Android API
+# API 33 соответствует Android 13, что правильно для современных устройств
 android.api = 33
 
 # (int) Minimum API
@@ -52,8 +53,8 @@ android.logcat_filters = *:S python:D
 # (str) Android architecture to build for
 android.archs = arm64-v8a
 
-# (list) The Android archs to build for, choices: armeabi-v7a, arm64-v8a, x86, x86_64
-# Для современных телефонов (включая твой Xiaomi в логах) нужен arm64-v8a
+# (list) The Android archs to build for
+# Фиксируем arm64-v8a для стабильности на твоем Xiaomi
 
 [buildozer]
 # (int) Log level (0 = error only, 1 = info, 2 = debug)
