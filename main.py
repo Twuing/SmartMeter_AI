@@ -48,6 +48,10 @@ try:
 except Exception:
     primary_external_storage_path = None
 try:
+    from plyer import filechooser
+except Exception:
+    filechooser = None
+try:
     from plyer import camera
 except Exception:
     camera = None
@@ -738,10 +742,24 @@ class SmartMeterApp(MDApp):
 
     def open_file_manager(self):
         print("DEBUG: Нажата кнопка 'Загрузить фото'")
-        start_path = self.get_android_start_path()
-        self.file_manager.show(start_path)
-        self.file_manager_opened = True
+        if filechooser is None:
+            print("DEBUG: plyer.filechooser недоступен")
+            self.root.ids.total_label.text = "Выбор файла недоступен."
+            return
+        self.file_manager_opened = False
         self.root.ids.total_label.text = "Выберите изображение..."
+        try:
+            filechooser.open_file(on_selection=self.handle_selection)
+        except Exception as error:
+            print(f"DEBUG: Ошибка filechooser.open_file: {error}")
+            self.root.ids.total_label.text = "Не удалось открыть галерею."
+
+    def handle_selection(self, selection):
+        print(f"DEBUG: handle_selection -> {selection}")
+        if not selection:
+            return
+        selected_path = selection[0]
+        self.select_image_path(selected_path)
 
     def open_key_file_manager(self):
         print("DEBUG: Нажата кнопка 'Выбрать файл (Google Key)'")
