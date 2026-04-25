@@ -21,14 +21,15 @@ source.include_patterns = assets/*,images/*.png
 version = 1.0.0
 
 # (list) Application requirements
-# ВНИМАНИЕ: Добавлены opencv и jnius. OpenCV нужен для обработки, jnius для камеры.
+# plyer и jnius — обязательны для работы системной галереи
+# opencv и pillow — для обработки и увеличения фото
 requirements = python3, hostpython3, kivy==2.3.0, kivymd==1.2.0, pillow, plyer, jnius, opencv, google-cloud-vision, google-auth, requests, certifi, charset-normalizer, idna, urllib3
 
 # (str) Supported orientation
 orientation = portrait
 
 # (list) Permissions
-# Полный набор прав: камера, интернет и доступ к фото для Android 13+ (MIUI)
+# READ_MEDIA_IMAGES необходим для Android 13+ (твоя ситуация)
 android.permissions = CAMERA, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, INTERNET, READ_MEDIA_IMAGES, READ_MEDIA_VIDEO
 
 # (int) Target Android API
@@ -52,8 +53,12 @@ android.logcat_filters = *:S python:D
 # (str) Android architecture to build for
 android.archs = arm64-v8a
 
-# (bool) Copy library to python-install directory (needed for some binary libs)
+# (bool) Copy library to python-install directory
 android.copy_libs = 1
+
+# (list) Garden requirements
+# Если ты используешь расширенные виджеты, можно оставить пустым
+garden_requirements =
 
 [buildozer]
 # (int) Log level (0 = error only, 1 = info, 2 = debug)
