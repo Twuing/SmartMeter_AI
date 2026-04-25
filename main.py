@@ -42,9 +42,18 @@ from kivymd.uix.screen import MDScreen
 from kivymd.uix.snackbar import Snackbar
 from plyer import notification
 try:
+    from plyer.storagepath import primary_external_storage_path
+except Exception:
+    primary_external_storage_path = None
+try:
     from plyer import camera
 except Exception:
     camera = None
+try:
+    from android.permissions import request_permissions, Permission
+except Exception:
+    request_permissions = None
+    Permission = None
 
 
 KV = """
@@ -546,6 +555,28 @@ class SmartMeterApp(MDApp):
         os.makedirs(base_dir, exist_ok=True)
         return os.path.join(base_dir, filename)
 
+    def get_android_start_path(self):
+        if platform == "android":
+            if primary_external_storage_path is not None:
+                try:
+                    storage_root = primary_external_storage_path()
+                    if storage_root:
+                        return storage_root
+                except Exception as error:
+                    print(f"DEBUG: Ошибка получения primary_external_storage_path: {error}")
+            return "/"
+        return os.path.expanduser("~")
+
+    def request_android_media_permissions(self):
+        if platform == "android" and request_permissions is not None and Permission is not None:
+            try:
+                request_permissions(
+                    [Permission.CAMERA, Permission.WRITE_EXTERNAL_STORAGE]
+                )
+                print("DEBUG: Запрошены Android permissions CAMERA/WRITE_EXTERNAL_STORAGE")
+            except Exception as error:
+                print(f"DEBUG: Ошибка запроса разрешений: {error}")
+
     def build(self):
         self.title = "SmartMeter AI"
         self.theme_cls.theme_style = "Light"
@@ -685,17 +716,20 @@ class SmartMeterApp(MDApp):
         return True
 
     def open_file_manager(self):
-        start_path = os.path.expanduser("~")
+        print("DEBUG: Нажата кнопка 'Загрузить фото'")
+        start_path = self.get_android_start_path()
         self.file_manager.show(start_path)
         self.file_manager_opened = True
         self.root.ids.total_label.text = "Выберите изображение..."
 
     def open_key_file_manager(self):
-        start_path = os.path.expanduser("~")
+        print("DEBUG: Нажата кнопка 'Выбрать файл (Google Key)'")
+        start_path = self.get_android_start_path()
         self.key_file_manager.show(start_path)
         self.key_file_manager_opened = True
 
     def select_key_path(self, path):
+        print(f"DEBUG: select_key_path -> {path}")
         if path.lower().endswith(".json"):
             self.root.ids.google_key_path_input.text = path
             self.google_key_path = path
@@ -706,6 +740,8 @@ class SmartMeterApp(MDApp):
         self.key_file_manager.close()
 
     def take_photo(self):
+        print("DEBUG: Нажата кнопка 'Фото'")
+        self.request_android_media_permissions()
         if platform == "win":
             print("Камера доступна только на Android")
             return
@@ -722,6 +758,7 @@ class SmartMeterApp(MDApp):
             print(f"Ошибка запуска камеры: {error}")
 
     def on_photo_complete(self, path):
+        print(f"DEBUG: on_photo_complete -> {path}")
         Clock.schedule_once(lambda dt: self._apply_captured_photo(path), 0)
 
     def _apply_captured_photo(self, path):
@@ -744,6 +781,7 @@ class SmartMeterApp(MDApp):
             placeholder.disabled = True
 
     def select_image_path(self, path):
+        print(f"DEBUG: select_image_path -> {path}")
         self.exit_file_manager()
         self.current_image_path = path
         self.root.ids.selected_image.source = path
@@ -842,6 +880,8 @@ class SmartMeterApp(MDApp):
         self.update_frame_geometry()
 
     def recognize_reading(self):
+        print("DEBUG: Нажата кнопка 'Распознать'")
+        self.request_android_media_permissions()
         if cv2 is None or np is None:
             print("Распознавание временно недоступно (нет OpenCV)")
             return
@@ -1179,13 +1219,23 @@ class SmartMeterApp(MDApp):
         self.load_history_from_db()
 
     def export_to_csv(self):
+        print("DEBUG: Нажата кнопка 'Экспорт'")
         if self.db_conn is None:
             self.root.ids.total_label.text = "База данных недоступна."
             return
         cursor = self.db_conn.cursor()
         cursor.execute("SELECT id, date, value, cost FROM readings ORDER BY id ASC")
         rows = cursor.fetchall()
-        export_path = self.app_storage_path("readings_export.csv")
+        if platform == "android":
+            private_data = os.environ.get("ANDROID_PRIVATE_DATA", "")
+            if private_data:
+                export_dir = private_data.replace("files", "")
+                os.makedirs(export_dir, exist_ok=True)
+                export_path = os.path.join(export_dir, "export.csv")
+            else:
+                export_path = self.app_storage_path("export.csv")
+        else:
+            export_path = self.app_storage_path("readings_export.csv")
         with open(export_path, "w", newline="", encoding="utf-8-sig") as csv_file:
             writer = csv.writer(csv_file, delimiter=";")
             writer.writerow(["Дата", "Показания", "Расход (кВт·ч)", "Тариф (тг)", "Итого (тг)"])
